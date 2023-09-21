@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import type { Mahasiswa } from '@prisma/client';
+import { Mahasiswa } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

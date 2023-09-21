@@ -12,8 +12,6 @@ import { useRouter } from 'next/navigation';
 import { SyntheticEvent } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { FieldValues, SubmitHandler, useForm, Controller } from 'react-hook-form';
-import { resolve } from 'path';
 
 const style = {
   position: 'absolute' as 'absolute',
@@ -32,38 +30,50 @@ interface AddMahasiswaProps {
   dosen: DosenWali[];
 }
 
+const initialValue = {
+  nama: '',
+  nim: '',
+  email: '',
+  tlp: '',
+  alamat: '',
+  idJurusan: '',
+  idDosenWali: '',
+};
+
 const AddMahasiswa: React.FC<AddMahasiswaProps> = ({ jurusan, dosen }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState(initialValue);
   const router = useRouter();
   const handleOpen = () => {
     setOpen((prev) => !prev);
   };
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-    getValues,
-  } = useForm<FieldValues>({
-    defaultValues: {
-      nama: '',
-      nim: '',
-      email: '',
-      tlp: '',
-      alamat: '',
-      idJurusan: '',
-      idDosenWali: '',
-    },
-  });
-
-  const onSubmit = (data: FieldValues) => {
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
-    // reset();
-    console.log(data);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
-
+  const handleChangeSelect = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: Number(value),
+    }));
+  };
+  const handleSubmit = async (e: SyntheticEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const response = await axios.post('/api/mahasiswa', formData);
+    if (response.status == 200) {
+      setOpen(false);
+      setLoading(false);
+      setFormData(initialValue);
+      toast.success('Data has been added');
+      router.refresh();
+    }
+  };
   return (
     <>
       <Button onClick={handleOpen} variant='outlined'>
@@ -74,20 +84,15 @@ const AddMahasiswa: React.FC<AddMahasiswaProps> = ({ jurusan, dosen }) => {
           <Typography id='modal-modal-title' variant='h6' component='h2'>
             Form Add Mahasiswa
           </Typography>
-          <Box onSubmit={handleSubmit(onSubmit)} component={'form'} className='flex flex-col gap-3 mt-3'>
-            <TextField label='Nama' {...register('nama', { required: 'Email harus di isi' })} variant='outlined' className='w-full' size='small' />
-            {errors.nama && <small className='text-xs text-red-500'>{`${errors.nama.message}`}</small>}
-            <TextField label='NIM' {...register('nim', { required: 'NIM harus di isi' })} variant='outlined' className='w-full' size='small' />
-            {errors.nim && <small className='text-xs text-red-500'>{`${errors.nim.message}`}</small>}
-            <TextField label='Email' {...register('email', { required: 'Email harus di isi' })} variant='outlined' className='w-full' size='small' />
-            {errors.email && <small className='text-xs text-red-500'>{`${errors.email.message}`}</small>}
-            <TextField label='No Tlp' {...register('tlp', { required: 'No tlp harus di isi' })} variant='outlined' className='w-full' size='small' />
-            {errors.tlp && <small className='text-xs text-red-500'>{`${errors.tlp.message}`}</small>}
-            <TextField label='Alamat' variant='outlined' {...register('alamat', { required: 'Alamat tidak boleh kosong' })} className='w-full' size='small' multiline minRows={3} />
-            {errors.alamat && <small className='text-xs text-red-500'>{`${errors.alamat.message}`}</small>}
+          <Box onSubmit={(e) => handleSubmit(e)} component={'form'} className='flex flex-col gap-3 mt-3'>
+            <TextField name='nama' value={formData.nama} onChange={handleChange} label='Nama' variant='outlined' className='w-full' size='small' />
+            <TextField name='nim' value={formData.nim} onChange={handleChange} label='NIM' variant='outlined' className='w-full' size='small' />
+            <TextField name='email' value={formData.email} onChange={handleChange} label='Email' variant='outlined' className='w-full' size='small' />
+            <TextField name='tlp' value={formData.tlp} onChange={handleChange} label='No Tlp' variant='outlined' className='w-full' size='small' />
+            <TextField name='alamat' value={formData.alamat} onChange={handleChange} label='Alamat' variant='outlined' className='w-full' size='small' multiline minRows={3} />
             <FormControl size='small' className='w-full'>
               <InputLabel id='demo-select-small-label'>Jurusan</InputLabel>
-              <Select labelId='demo-select-small-label' {...register('jurusan')} id='demo-select-small' label='Jurusan'>
+              <Select labelId='demo-select-small-label' onChange={handleChangeSelect} name='idJurusan' id='demo-select-small' label='Jurusan'>
                 <MenuItem value=''>
                   <em>-- Pilih Jurusan --</em>
                 </MenuItem>
@@ -97,11 +102,10 @@ const AddMahasiswa: React.FC<AddMahasiswaProps> = ({ jurusan, dosen }) => {
                   </MenuItem>
                 ))}
               </Select>
-              {errors.idJurusan && <small className='text-xs text-red-500'>{`${errors.idJurusan.message}`}</small>}
             </FormControl>
             <FormControl size='small' className='w-full'>
               <InputLabel id='demo-select-small-label'>Dosen Wali</InputLabel>
-              <Select labelId='demo-select-small-label' {...register('dosen')} id='demo-select-small' label='Dosen Wali'>
+              <Select labelId='demo-select-small-label' onChange={handleChangeSelect} name='idDosenWali' id='demo-select-small' label='Dosen Wali'>
                 <MenuItem value=''>
                   <em>-- Pilih Dosen --</em>
                 </MenuItem>
@@ -111,7 +115,6 @@ const AddMahasiswa: React.FC<AddMahasiswaProps> = ({ jurusan, dosen }) => {
                   </MenuItem>
                 ))}
               </Select>
-              {errors.idDosenWali && <small className='text-xs text-red-500'>{`${errors.idDosenWali.message}`}</small>}
             </FormControl>
             <Box className='flex flex-col'>
               <Button type='submit' variant='outlined' className='w-full'>
